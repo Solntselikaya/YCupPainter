@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -25,6 +26,38 @@ private val LightColorScheme = lightColorScheme(
     primary = White,
     secondary = Green,
     onPrimary = Black,
+)
+
+private val defaultColorPalette: List<Color> = listOf(
+    White, Orange, Black, Blue
+)
+
+private val ExtendedColorPalette: List<Color> = listOf(
+    Conditioner,
+    PaleMagentaPink,
+    DeepPeach,
+    BrilliantLavender,
+    Water,
+    TitaniumYellow,
+    ClassicRose,
+    RoyalOrange,
+    PaleViolet,
+    WinterWizard,
+    VividLimeGreen,
+    FrenchPink,
+    SafetyOrange,
+    LavenderIndigo,
+    VividSkyBlue,
+    Apple,
+    RubineRed,
+    LightCarminePink,
+    OceanBlue,
+    FrenchSkyBlue,
+    SapGreen,
+    BigDipORuby,
+    Orange,
+    AmericanViolet,
+    Blue
 )
 
 @Composable
