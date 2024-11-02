@@ -7,17 +7,17 @@ import androidx.room.RoomDatabase
 import com.velikanova.ycuppainter.data.dao.DrawingDao
 import com.velikanova.ycuppainter.data.dao.FrameDao
 import com.velikanova.ycuppainter.data.dao.ProjectDao
-import com.velikanova.ycuppainter.data.model.Drawing
-import com.velikanova.ycuppainter.data.model.Frame
-import com.velikanova.ycuppainter.data.model.Project
+import com.velikanova.ycuppainter.data.model.DrawingEntity
+import com.velikanova.ycuppainter.data.model.FrameEntity
+import com.velikanova.ycuppainter.data.model.ProjectEntity
 import kotlinx.coroutines.CoroutineScope
 
 @Database(
     version = 1,
     entities = [
-        Project::class,
-        Frame::class,
-        Drawing::class
+        ProjectEntity::class,
+        FrameEntity::class,
+        DrawingEntity::class
     ],
     exportSchema = true
 

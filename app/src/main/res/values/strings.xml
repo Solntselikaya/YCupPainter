@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">YCupPainter</string>
+    <string name="ic_descr_create_new_project">Create new project</string>
+    <string name="empty_list">Пока тут пусто..</string>
 </resources>

@@ -10,7 +10,7 @@ import androidx.room.PrimaryKey
     tableName = "frames",
     foreignKeys = [
         ForeignKey(
-            entity = Project::class,
+            entity = ProjectEntity::class,
             parentColumns = ["id"],
             childColumns = ["project_id"],
             onDelete = ForeignKey.CASCADE,
@@ -22,7 +22,7 @@ import androidx.room.PrimaryKey
         Index(value = ["project_id"])
     ]
 )
-data class Frame(
+data class FrameEntity(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     val id: Int,
