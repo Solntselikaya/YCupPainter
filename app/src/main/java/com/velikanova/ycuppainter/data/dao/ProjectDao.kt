@@ -13,5 +13,5 @@ interface ProjectDao {
     fun selectAllAsFlow(): Flow<List<ProjectShortDto>>
 
     @Upsert
-    suspend fun upsert(project: ProjectEntity): Int
+    suspend fun upsert(project: ProjectEntity)
 }

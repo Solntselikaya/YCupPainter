@@ -71,6 +71,6 @@ class ProjectListViewModel(
     }
 
     private fun onEditProject(id: Int) = viewModelScope.launch {
-        _effect.emit()
+//        _effect.emit()
     }
 }

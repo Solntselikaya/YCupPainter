@@ -1,6 +1,7 @@
 package com.velikanova.ycuppainter.ui.screen.painter
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -21,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.DrawStyle
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
@@ -35,8 +40,6 @@ import com.velikanova.ycuppainter.ui.theme.YCupPainterTheme
 
 @Composable
 fun Painter() {
-
-
     Scaffold(
         topBar = {
             TopBar(
@@ -78,28 +81,30 @@ private fun TopBar(
     onPlayClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier.padding(PADDING_LARGE),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(PADDING_LARGE),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row {
+        Row(horizontalArrangement = Arrangement.SpaceBetween) {
             IconButton(onClick = onUndoClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_undo_arrow_24),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = Color.Unspecified
                 )
             }
-
-            Spacer(modifier = Modifier.width(PADDING_MEDIUM))
 
             IconButton(onClick = onRedoClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_redo_arrow_24),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = Color.Unspecified
                 )
             }
         }
 
-        Row {
+        Row(horizontalArrangement = Arrangement.SpaceBetween) {
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_bin_32),
@@ -107,7 +112,6 @@ private fun TopBar(
                 )
             }
 
-            Spacer(modifier = Modifier.width(PADDING_LARGE))
             IconButton(onClick = onAddFrameClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_add_frame_32),
@@ -115,7 +119,6 @@ private fun TopBar(
                 )
             }
 
-            Spacer(modifier = Modifier.width(PADDING_LARGE))
             IconButton(onClick = onLayersClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_layers_32),
@@ -124,20 +127,20 @@ private fun TopBar(
             }
         }
 
-        Row {
+        Row(horizontalArrangement = Arrangement.SpaceBetween) {
             IconButton(onClick = onPauseClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_stop_32),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = Color.Unspecified
                 )
             }
-
-            Spacer(modifier = Modifier.width(PADDING_LARGE))
 
             IconButton(onClick = onPlayClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_play_32),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = Color.Unspecified
                 )
             }
         }
@@ -155,12 +158,18 @@ private fun Content(
             .padding(paddingValues)
             .padding(PADDING_LARGE)
     ) {
+        Image(
+            modifier = Modifier.fillMaxSize(),
+            painter = painterResource(R.drawable.canvas_background),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds
+        )
+
         Canvas(
-            modifier = Modifier,
+            modifier = Modifier
+                .fillMaxSize(),
         ) {
-            drawImage(
-                image = background
-            )
+
         }
     }
 }
@@ -185,7 +194,8 @@ private fun BottomBar(
 
     Row(
         modifier = Modifier
-            .padding(top = PADDING_SMALL),
+            .fillMaxWidth()
+            .padding(vertical = PADDING_SMALL),
         horizontalArrangement = Arrangement.Absolute.Center
     ) {
 
@@ -198,7 +208,7 @@ private fun BottomBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_pen_32),
                     contentDescription = null,
-                    tint = if (pressed[PEN] == true) MaterialTheme.colorScheme.onBackground else Green
+                    tint = if (pressed[PEN] == true) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -214,7 +224,7 @@ private fun BottomBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_brush_32),
                     contentDescription = null,
-                    tint = if (pressed[BRUSH] == true) MaterialTheme.colorScheme.onBackground else Green
+                    tint = if (pressed[BRUSH] == true) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -230,7 +240,7 @@ private fun BottomBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_erase_32),
                     contentDescription = null,
-                    tint = if (pressed[ERASER] == true) MaterialTheme.colorScheme.onBackground else Green
+                    tint = if (pressed[ERASER] == true) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -246,7 +256,7 @@ private fun BottomBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_instruments_32),
                     contentDescription = null,
-                    tint = if (pressed[INSTRUMENTS] == true) MaterialTheme.colorScheme.onBackground else Green
+                    tint = if (pressed[INSTRUMENTS] == true) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -259,14 +269,14 @@ private fun BottomBar(
                 pressButton(COLOR)
             }
         ) {
-            val borderColor = if (pressed[COLOR] == true) Color.Transparent else Green
+            val borderColor = if (pressed[COLOR] == true) Green else Color.Transparent
 
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
                     .border(1.5.dp, borderColor, CircleShape)
                     .size(28.dp)
-                    .background(Color(selectedColorInt))
+                    .background(Color.Black)
             )
         }
     }
