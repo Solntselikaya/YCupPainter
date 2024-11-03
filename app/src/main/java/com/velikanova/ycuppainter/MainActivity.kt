@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.velikanova.ycuppainter.ui.screen.painter.Painter
 import com.velikanova.ycuppainter.ui.theme.YCupPainterTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,15 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             YCupPainterTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Canvas(
-                        modifier = Modifier
-                            .padding()
-                    ) { }
-                }
+                Painter()
             }
         }
     }
