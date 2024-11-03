@@ -1,4 +1,4 @@
-package com.velikanova.ycuppainter.data.model
+package com.velikanova.ycuppainter.data.model.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

@@ -4,12 +4,13 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.velikanova.ycuppainter.data.dao.DrawingDao
 import com.velikanova.ycuppainter.data.dao.FrameDao
 import com.velikanova.ycuppainter.data.dao.ProjectDao
-import com.velikanova.ycuppainter.data.model.DrawingEntity
-import com.velikanova.ycuppainter.data.model.FrameEntity
-import com.velikanova.ycuppainter.data.model.ProjectEntity
+import com.velikanova.ycuppainter.data.model.entity.DrawingEntity
+import com.velikanova.ycuppainter.data.model.entity.FrameEntity
+import com.velikanova.ycuppainter.data.model.entity.ProjectEntity
 import kotlinx.coroutines.CoroutineScope
 
 @Database(
@@ -20,7 +21,11 @@ import kotlinx.coroutines.CoroutineScope
         DrawingEntity::class
     ],
     exportSchema = true
-
+)
+@TypeConverters(
+    value = [
+        DbConverters::class
+    ]
 )
 abstract class RoomDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
