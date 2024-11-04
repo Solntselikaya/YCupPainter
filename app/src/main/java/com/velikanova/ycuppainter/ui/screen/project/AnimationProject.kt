@@ -55,10 +55,12 @@ import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.*
 import com.velikanova.ycuppainter.ui.screen.project.painter.DrawMode
 import com.velikanova.ycuppainter.ui.screen.project.painter.PainterMotionEvent
 import com.velikanova.ycuppainter.ui.screen.project.painter.PathProps
+import com.velikanova.ycuppainter.ui.theme.Black
 import com.velikanova.ycuppainter.ui.theme.Green
 import com.velikanova.ycuppainter.ui.theme.InactiveColor
 import com.velikanova.ycuppainter.ui.theme.PADDING_LARGE
 import com.velikanova.ycuppainter.ui.theme.PADDING_MEDIUM
+import com.velikanova.ycuppainter.ui.theme.White
 import com.velikanova.ycuppainter.ui.theme.YCupPainterTheme
 import com.velikanova.ycuppainter.ui.theme.defaultColorPalette
 import com.velikanova.ycuppainter.utils.handleEvents
@@ -470,7 +472,7 @@ private fun BottomBar(
                 val selectedColor = Color(selectedColorInt)
                 val borderColor = if (pressedButton == COLOR) {
                     Green
-                } else if (selectedColor.toArgb() == MaterialTheme.colorScheme.background.toArgb()) {
+                } else if (selectedColorInt == White.toArgb() || selectedColorInt == Black.toArgb()) {
                     MaterialTheme.colorScheme.onBackground
                 } else {
                     Color.Transparent
