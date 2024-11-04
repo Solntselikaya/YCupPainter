@@ -146,16 +146,32 @@ class ProjectViewModel(
 
         viewModelScope.launch {
             var index = 0
+            var lastDrawn = false
             while (_state.value.isPLaying) {
                 val currPaths = frameDrawing.getFigures(index)
 
-                _state.update { prevState ->
-                    prevState.copy(
-                        paths = currPaths ?: emptyList()
-                    )
+                if (currPaths == null && !lastDrawn) {
+                    _state.update { prevState ->
+                        prevState.copy(
+                            paths = frameDrawing.getFigures()
+                        )
+                    }
+
+                    lastDrawn = true
+                    index += 1
+                } else if (currPaths != null) {
+                    _state.update { prevState ->
+                        prevState.copy(
+                            paths = currPaths
+                        )
+                    }
+
+                    index += 1
+                } else {
+                    lastDrawn = false
+                    index = 0
                 }
 
-                if (currPaths == null) index = 0 else index += 1
                 delay(100L)
             }
         }
