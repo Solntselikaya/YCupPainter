@@ -1,6 +1,5 @@
 package com.velikanova.ycuppainter.ui.screen.project
 
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,10 +19,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,12 +51,12 @@ import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.E
 import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.INSTRUMENTS
 import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.PEN
 import com.velikanova.ycuppainter.ui.screen.project.additional.ColorPopup
-import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent
 import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.*
 import com.velikanova.ycuppainter.ui.screen.project.painter.DrawMode
 import com.velikanova.ycuppainter.ui.screen.project.painter.PainterMotionEvent
 import com.velikanova.ycuppainter.ui.screen.project.painter.PathProps
 import com.velikanova.ycuppainter.ui.theme.Green
+import com.velikanova.ycuppainter.ui.theme.InactiveColor
 import com.velikanova.ycuppainter.ui.theme.PADDING_LARGE
 import com.velikanova.ycuppainter.ui.theme.PADDING_MEDIUM
 import com.velikanova.ycuppainter.ui.theme.YCupPainterTheme
@@ -76,30 +73,41 @@ fun AnimationProject() {
     Scaffold(
         topBar = {
             TopBar(
+                isPlaying = state.isPLaying,
+                haveMultipleFrames = state.haveMultipleFrames,
                 undoAvailable = state.haveChangesToUndo,
                 redoAvailable = state.haveChangesToRedo,
                 onUndoClick = { viewModel.reduce(Undo) },
                 onRedoClick = { viewModel.reduce(Redo) },
-                onDeleteClick = { /*TODO*/ },
-                onAddFrameClick = { /*TODO*/ },
+                onDeleteClick = { viewModel.reduce(DeleteFrame) },
+                onAddFrameClick = { viewModel.reduce(AddFrame) },
                 onLayersClick = { /*TODO*/ },
-                onPauseClick = { /*TODO*/ },
-                onPlayClick = { /*TODO*/ }
+                onPauseClick = { viewModel.reduce(Pause) },
+                onPlayClick = { viewModel.reduce(Play) }
             )
         },
         content = { paddingValues ->
-            Content(
-                paddingValues = paddingValues,
-                drawColor = state.color,
-                drawStrokeWidth = state.strokeWidth,
-                drawMode = state.drawMode,
-                paths = state.paths,
-                onDrawLine = { viewModel.reduce(DrawLine(it)) },
-                onDrawEraserLine = { viewModel.reduce(DrawEraserLine(it)) },
-            )
+            if (state.isPLaying) {
+                PlayAnimation(
+                    paddingValues = paddingValues,
+                    paths = state.paths
+                )
+            } else {
+                Content(
+                    paddingValues = paddingValues,
+                    drawColor = state.color,
+                    drawStrokeWidth = state.strokeWidth,
+                    drawMode = state.drawMode,
+                    paths = state.paths,
+                    prevPaths = state.prevFramePaths,
+                    onDrawLine = { viewModel.reduce(DrawLine(it)) },
+                    onDrawEraserLine = { viewModel.reduce(DrawEraserLine(it)) },
+                )
+            }
         },
         bottomBar = {
             BottomBar(
+                isPlaying = state.isPLaying,
                 selectedColorInt = state.color,
                 pressedButton = state.pressedBottomButton,
                 onPenClick = { viewModel.reduce(ChoosePen) },
@@ -114,6 +122,8 @@ fun AnimationProject() {
 
 @Composable
 private fun TopBar(
+    isPlaying: Boolean,
+    haveMultipleFrames: Boolean,
     undoAvailable: Boolean,
     redoAvailable: Boolean,
     onUndoClick: () -> Unit,
@@ -134,64 +144,82 @@ private fun TopBar(
         Row {
             IconButton(
                 onClick = onUndoClick,
-                enabled = undoAvailable
+                enabled = (undoAvailable && !isPlaying)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_undo_arrow_24),
                     contentDescription = null,
-                    tint = if (undoAvailable) MaterialTheme.colorScheme.onBackground else Color.Unspecified
+                    tint = if (undoAvailable && !isPlaying) MaterialTheme.colorScheme.onBackground else Color.Unspecified
                 )
             }
 
             IconButton(
                 onClick = onRedoClick,
-                enabled = redoAvailable
+                enabled = (redoAvailable && !isPlaying)
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_redo_arrow_24),
                     contentDescription = null,
-                    tint = if (redoAvailable) MaterialTheme.colorScheme.onBackground else Color.Unspecified
+                    tint = if (redoAvailable && !isPlaying) MaterialTheme.colorScheme.onBackground else Color.Unspecified
                 )
             }
         }
 
         Row {
-            IconButton(onClick = onDeleteClick) {
+            IconButton(
+                onClick = onDeleteClick,
+                enabled = !isPlaying
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_bin_32),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
 
-            IconButton(onClick = onAddFrameClick) {
+            IconButton(
+                onClick = onAddFrameClick,
+                enabled = !isPlaying
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_add_frame_32),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
 
-            IconButton(onClick = onLayersClick) {
+            IconButton(
+                onClick = onLayersClick,
+                enabled = !isPlaying
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_layers_32),
-                    contentDescription = null
+                    contentDescription = null,
+                    tint = if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
         }
 
         Row(horizontalArrangement = Arrangement.SpaceBetween) {
-            IconButton(onClick = onPauseClick) {
+            IconButton(
+                onClick = onPauseClick,
+                enabled = isPlaying
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_stop_32),
                     contentDescription = null,
-                    tint = Color.Unspecified
+                    tint = if (isPlaying) MaterialTheme.colorScheme.onBackground else Color.Unspecified
                 )
             }
 
-            IconButton(onClick = onPlayClick) {
+            IconButton(
+                onClick = onPlayClick,
+                enabled = (haveMultipleFrames && !isPlaying)
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_play_32),
                     contentDescription = null,
-                    tint = Color.Unspecified
+                    tint = if (haveMultipleFrames && !isPlaying) MaterialTheme.colorScheme.onBackground else Color.Unspecified
                 )
             }
         }
@@ -205,6 +233,7 @@ private fun Content(
     drawStrokeWidth: Float,
     drawMode: DrawMode,
     paths: List<Pair<Path, PathProps>>,
+    prevPaths: List<Pair<Path, PathProps>>,
     onDrawLine: (Path) -> Unit,
     onDrawEraserLine: (Path) -> Unit
 ) {
@@ -224,6 +253,21 @@ private fun Content(
             contentDescription = null,
             contentScale = ContentScale.FillBounds
         )
+
+        if (prevPaths.isNotEmpty()) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                prevPaths.forEach {
+                    val path = it.first
+                    val property = it.second
+
+                    if (!property.eraseMode) {
+                        drawPainterPath(path, Color(property.color).copy(0.3f), property.strokeWidth)
+                    } else {
+                        drawEraserPath(path, property.strokeWidth)
+                    }
+                }
+            }
+        }
 
         Canvas(
             modifier = Modifier
@@ -310,7 +354,40 @@ private fun Content(
 }
 
 @Composable
+private fun PlayAnimation(
+    paddingValues: PaddingValues,
+    paths: List<Pair<Path, PathProps>>
+) {
+    Box(
+        modifier = Modifier
+            .padding(paddingValues)
+            .padding(PADDING_LARGE)
+    ) {
+        Image(
+            modifier = Modifier.fillMaxSize(),
+            painter = painterResource(R.drawable.canvas_background),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds
+        )
+
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            paths.forEach {
+                val path = it.first
+                val property = it.second
+
+                if (!property.eraseMode) {
+                    drawPainterPath(path, Color(property.color), property.strokeWidth)
+                } else {
+                    drawEraserPath(path, property.strokeWidth)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun BottomBar(
+    isPlaying: Boolean,
     selectedColorInt: Int,
     pressedButton: BottomBarButton?,
     onPenClick: () -> Unit,
@@ -329,11 +406,12 @@ private fun BottomBar(
             onClick = {
                 onPenClick()
             },
+            enabled = !isPlaying,
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_pen_32),
                     contentDescription = null,
-                    tint = if (pressedButton == PEN) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == PEN) Green else if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
         )
@@ -342,11 +420,12 @@ private fun BottomBar(
             onClick = {
                 onBrushClick()
             },
+            enabled = !isPlaying,
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_brush_32),
                     contentDescription = null,
-                    tint = if (pressedButton == BRUSH) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == BRUSH) Green else if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
         )
@@ -355,11 +434,12 @@ private fun BottomBar(
             onClick = {
                 onEraserClick()
             },
+            enabled = !isPlaying,
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_erase_32),
                     contentDescription = null,
-                    tint = if (pressedButton == ERASER) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == ERASER) Green else if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
         )
@@ -368,11 +448,12 @@ private fun BottomBar(
             onClick = {
                 onInstrumentsClick()
             },
+            enabled = !isPlaying,
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_instruments_32),
                     contentDescription = null,
-                    tint = if (pressedButton == INSTRUMENTS) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == INSTRUMENTS) Green else if (!isPlaying) MaterialTheme.colorScheme.onBackground else InactiveColor
                 )
             }
         )
@@ -383,15 +464,24 @@ private fun BottomBar(
                 onClick = {
                     colorsExpanded = true
                     onColorClick(selectedColorInt)
-                }
+                },
+                enabled = !isPlaying,
             ) {
-                val borderColor = if (pressedButton == COLOR) Green else Color.Transparent
+                val selectedColor = Color(selectedColorInt)
+                val borderColor = if (pressedButton == COLOR) {
+                    Green
+                } else if (selectedColor.toArgb() == MaterialTheme.colorScheme.background.toArgb()) {
+                    MaterialTheme.colorScheme.onBackground
+                } else {
+                    Color.Transparent
+                }
+
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
                         .border(1.5.dp, borderColor, CircleShape)
                         .size(28.dp)
-                        .background(Color(selectedColorInt))
+                        .background(selectedColor)
                 )
             }
 

@@ -10,10 +10,13 @@ import com.velikanova.ycuppainter.ui.theme.Blue
 
 data class ProjectState(
     val drawMode: DrawMode = DrawMode.DRAW,
+    val isPLaying: Boolean = false,
     val color: Int = Blue.toArgb(),
     val strokeWidth: Float = 10f,
     val pressedBottomButton: BottomBarButton? = null,
     val paths: List<Pair<Path, PathProps>> = emptyList(),
+    val prevFramePaths: List<Pair<Path, PathProps>> = emptyList(),
     val haveChangesToUndo: Boolean = false,
-    val haveChangesToRedo: Boolean = false
+    val haveChangesToRedo: Boolean = false,
+    val haveMultipleFrames: Boolean = false
 ): MVIState

@@ -1,6 +1,7 @@
 package com.velikanova.ycuppainter.ui.screen.project.mvi
 
 import androidx.compose.ui.graphics.Path
+import androidx.core.util.Pools
 import com.velikanova.ycuppainter.architecture.MVIIntent
 
 sealed interface ProjectIntent: MVIIntent {
@@ -16,4 +17,10 @@ sealed interface ProjectIntent: MVIIntent {
 
     data object Undo : ProjectIntent
     data object Redo : ProjectIntent
+
+    data object AddFrame : ProjectIntent
+    data object DeleteFrame : ProjectIntent
+
+    data object Play : ProjectIntent
+    data object Pause : ProjectIntent
 }

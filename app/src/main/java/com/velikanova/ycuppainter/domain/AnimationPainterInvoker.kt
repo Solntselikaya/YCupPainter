@@ -40,4 +40,9 @@ class AnimationPainterInvoker {
     fun getHaveCommandsToRedo(): Boolean {
         return undoneCommands.isNotEmpty()
     }
+
+    fun clear() {
+        commands.clear()
+        undoneCommands.clear()
+    }
 }
