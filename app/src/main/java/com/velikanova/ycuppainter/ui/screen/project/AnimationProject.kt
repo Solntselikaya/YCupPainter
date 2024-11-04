@@ -1,4 +1,4 @@
-package com.velikanova.ycuppainter.ui.screen.painter
+package com.velikanova.ycuppainter.ui.screen.project
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,27 +38,42 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.velikanova.ycuppainter.R
-import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.BRUSH
-import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.COLOR
-import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.ERASER
-import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.INSTRUMENTS
-import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.PEN
+import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton
+import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.BRUSH
+import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.COLOR
+import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.ERASER
+import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.INSTRUMENTS
+import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.PEN
+import com.velikanova.ycuppainter.ui.screen.project.additional.ColorPopup
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseBrush
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseColor
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseEraser
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseInstruments
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChoosePen
+import com.velikanova.ycuppainter.ui.screen.project.painter.DrawMode
+import com.velikanova.ycuppainter.ui.screen.project.painter.PainterMotionEvent
+import com.velikanova.ycuppainter.ui.screen.project.painter.PathProps
 import com.velikanova.ycuppainter.ui.theme.Green
 import com.velikanova.ycuppainter.ui.theme.PADDING_LARGE
 import com.velikanova.ycuppainter.ui.theme.PADDING_MEDIUM
 import com.velikanova.ycuppainter.ui.theme.YCupPainterTheme
+import com.velikanova.ycuppainter.ui.theme.defaultColorPalette
 import com.velikanova.ycuppainter.utils.handleEvents
 
 private const val DELAY_AFTER_DOWN: Long = 27L
 
 @Composable
 fun AnimationProject() {
+    val viewModel = ProjectViewModel()
+    val state by viewModel.state.collectAsState()
+
     Scaffold(
         topBar = {
             TopBar(
@@ -73,17 +90,21 @@ fun AnimationProject() {
         },
         content = { paddingValues ->
             Content(
-                paddingValues = paddingValues
+                paddingValues = paddingValues,
+                drawColor = state.color,
+                drawStrokeWidth = state.strokeWidth,
+                drawMode = state.drawMode,
             )
         },
         bottomBar = {
             BottomBar(
-                selectedColorInt = 0,
-                onPenClick = { /*TODO*/ },
-                onBrushClick = { /*TODO*/ },
-                onEraserClick = { /*TODO*/ },
-                onInstrumentsClick = { /*TODO*/ },
-                onColorClick = { /*TODO*/ }
+                selectedColorInt = state.color,
+                pressedButton = state.pressedBottomButton,
+                onPenClick = { viewModel.reduce(ChoosePen) },
+                onBrushClick = { viewModel.reduce(ChooseBrush) },
+                onEraserClick = { viewModel.reduce(ChooseEraser) },
+                onInstrumentsClick = { viewModel.reduce(ChooseInstruments) },
+                onColorClick = { viewModel.reduce(ChooseColor(it)) }
             )
         }
     )
@@ -171,11 +192,19 @@ private fun TopBar(
 
 @Composable
 private fun Content(
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    drawColor: Int,
+    drawStrokeWidth: Float,
+    drawMode: DrawMode
 ) {
+    val pathProps = PathProps(
+        strokeWidth = drawStrokeWidth,
+        color = Color(drawColor),
+        eraseMode = drawMode == DrawMode.ERASE
+    )
+
     val paths = remember { mutableStateListOf<Pair<Path, PathProps>>() }
     var currentPath by remember { mutableStateOf(Path()) }
-    var drawMode by remember { mutableStateOf(DrawMode.DRAW) }
 
     var motionEvent by remember { mutableStateOf(PainterMotionEvent.IDLE) }
     var currentPosition by remember { mutableStateOf(Offset.Unspecified) }
@@ -233,7 +262,7 @@ private fun Content(
 
                 PainterMotionEvent.UP -> {
                     currentPath.lineTo(currentPosition.x, currentPosition.y)
-                    paths.add(Pair(currentPath, PathProps()))
+                    paths.add(Pair(currentPath, pathProps))
                     currentPath = Path()
 
                     currentPosition = Offset.Unspecified
@@ -252,15 +281,15 @@ private fun Content(
                     val property = it.second
 
                     if (!property.eraseMode) {
-                        drawPainterPath(path, Color.Black, 10f)
+                        drawPainterPath(path, property.color, 10f)
                     } else {
                         drawEraserPath(path, 10f)
                     }
                 }
 
                 if (motionEvent != PainterMotionEvent.IDLE) {
-                    if (!false) {
-                        drawPainterPath(currentPath, Color.Black, 10f)
+                    if (drawMode != DrawMode.ERASE) {
+                        drawPainterPath(currentPath, Color(drawColor), 10f)
                     } else {
                         drawEraserPath(currentPath, 10f)
                     }
@@ -275,21 +304,13 @@ private fun Content(
 @Composable
 private fun BottomBar(
     selectedColorInt: Int,
+    pressedButton: BottomBarButton?,
     onPenClick: () -> Unit,
     onBrushClick: () -> Unit,
     onEraserClick: () -> Unit,
     onInstrumentsClick: () -> Unit,
-    onColorClick: () -> Unit
+    onColorClick: (color: Int) -> Unit
 ) {
-    val pressed = BottomBarButton.entries
-        .associateWith { false }
-        .toMutableMap()
-    val pressButton: (BottomBarButton) -> Unit = {
-        pressed.replaceAll { key, _ ->
-            key == it
-        }
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth(),
@@ -299,13 +320,12 @@ private fun BottomBar(
         IconButton(
             onClick = {
                 onPenClick()
-                pressButton(PEN)
             },
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_pen_32),
                     contentDescription = null,
-                    tint = if (pressed[PEN] == true) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == PEN) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -313,13 +333,12 @@ private fun BottomBar(
         IconButton(
             onClick = {
                 onBrushClick()
-                pressButton(BRUSH)
             },
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_brush_32),
                     contentDescription = null,
-                    tint = if (pressed[BRUSH] == true) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == BRUSH) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -327,13 +346,12 @@ private fun BottomBar(
         IconButton(
             onClick = {
                 onEraserClick()
-                pressButton(ERASER)
             },
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_erase_32),
                     contentDescription = null,
-                    tint = if (pressed[ERASER] == true) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == ERASER) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
@@ -341,33 +359,58 @@ private fun BottomBar(
         IconButton(
             onClick = {
                 onInstrumentsClick()
-                pressButton(INSTRUMENTS)
             },
             content = {
                 Icon(
                     painter = painterResource(R.drawable.ic_instruments_32),
                     contentDescription = null,
-                    tint = if (pressed[INSTRUMENTS] == true) Green else MaterialTheme.colorScheme.onBackground
+                    tint = if (pressedButton == INSTRUMENTS) Green else MaterialTheme.colorScheme.onBackground
                 )
             }
         )
 
-        IconButton(
-            onClick = {
-                onColorClick()
-                pressButton(COLOR)
+        var colorsExpanded by remember { mutableStateOf(pressedButton == COLOR) }
+        Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
+            IconButton(
+                onClick = {
+                    colorsExpanded = true
+                    onColorClick(selectedColorInt)
+                }
+            ) {
+                val borderColor = if (pressedButton == COLOR) Green else Color.Transparent
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .border(1.5.dp, borderColor, CircleShape)
+                        .size(28.dp)
+                        .background(Color(selectedColorInt))
+                )
             }
-        ) {
-            val borderColor = if (pressed[COLOR] == true) Green else Color.Transparent
 
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .border(1.5.dp, borderColor, CircleShape)
-                    .size(28.dp)
-                    .background(Color.Black)
-            )
+            ColorPopup(
+                expanded = colorsExpanded,
+                onDismissRequest = { colorsExpanded = false }
+            ) {
+                MaterialTheme.colorScheme.defaultColorPalette.forEach {
+                    ColorButton(it) { onColorClick(it.toArgb()) }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun ColorButton(
+    color: Color,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick) {
+        Box(
+            modifier = Modifier
+                .clip(CircleShape)
+                .size(28.dp)
+                .background(color)
+        )
     }
 }
 

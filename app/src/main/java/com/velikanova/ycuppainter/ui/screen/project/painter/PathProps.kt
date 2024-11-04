@@ -1,4 +1,4 @@
-package com.velikanova.ycuppainter.ui.screen.painter
+package com.velikanova.ycuppainter.ui.screen.project.painter
 
 import androidx.compose.ui.graphics.Color
 

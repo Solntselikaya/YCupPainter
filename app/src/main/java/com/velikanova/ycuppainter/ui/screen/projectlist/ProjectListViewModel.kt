@@ -1,12 +1,12 @@
-package com.velikanova.ycuppainter.ui.screen.projects
+package com.velikanova.ycuppainter.ui.screen.projectlist
 
 import androidx.lifecycle.viewModelScope
 import com.velikanova.ycuppainter.architecture.MVIViewModel
 import com.velikanova.ycuppainter.data.dao.ProjectDao
 import com.velikanova.ycuppainter.data.model.entity.ProjectEntity
-import com.velikanova.ycuppainter.ui.screen.projects.additional.ProjectListDialogState
-import com.velikanova.ycuppainter.ui.screen.projects.mvi.ProjectListIntent.*
-import com.velikanova.ycuppainter.ui.screen.projects.mvi.ProjectListState.*
+import com.velikanova.ycuppainter.ui.screen.projectlist.additional.ProjectListDialogState
+import com.velikanova.ycuppainter.ui.screen.projectlist.mvi.ProjectListIntent.*
+import com.velikanova.ycuppainter.ui.screen.projectlist.mvi.ProjectListState.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,9 +18,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.util.UUID
-import com.velikanova.ycuppainter.ui.screen.projects.mvi.ProjectListState as State
-import com.velikanova.ycuppainter.ui.screen.projects.mvi.ProjectListIntent as Intent
-import com.velikanova.ycuppainter.ui.screen.projects.mvi.ProjectListEffect as Effect
+import com.velikanova.ycuppainter.ui.screen.projectlist.mvi.ProjectListState as State
+import com.velikanova.ycuppainter.ui.screen.projectlist.mvi.ProjectListIntent as Intent
+import com.velikanova.ycuppainter.ui.screen.projectlist.mvi.ProjectListEffect as Effect
 
 class ProjectListViewModel(
     private val projectDao: ProjectDao

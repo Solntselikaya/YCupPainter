@@ -3,6 +3,7 @@ package com.velikanova.ycuppainter.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -28,37 +29,39 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = Black,
 )
 
-private val defaultColorPalette: List<Color> = listOf(
-    White, Orange, Black, Blue
-)
+val ColorScheme.defaultColorPalette: List<Color>
+    @Composable get() = listOf(
+        White, Orange, Black, Blue
+    )
 
-private val ExtendedColorPalette: List<Color> = listOf(
-    Conditioner,
-    PaleMagentaPink,
-    DeepPeach,
-    BrilliantLavender,
-    Water,
-    TitaniumYellow,
-    ClassicRose,
-    RoyalOrange,
-    PaleViolet,
-    WinterWizard,
-    VividLimeGreen,
-    FrenchPink,
-    SafetyOrange,
-    LavenderIndigo,
-    VividSkyBlue,
-    Apple,
-    RubineRed,
-    LightCarminePink,
-    OceanBlue,
-    FrenchSkyBlue,
-    SapGreen,
-    BigDipORuby,
-    Orange,
-    AmericanViolet,
-    Blue
-)
+val ColorScheme.extendedColorPalette: List<Color>
+    @Composable get() = listOf(
+        Conditioner,
+        PaleMagentaPink,
+        DeepPeach,
+        BrilliantLavender,
+        Water,
+        TitaniumYellow,
+        ClassicRose,
+        RoyalOrange,
+        PaleViolet,
+        WinterWizard,
+        VividLimeGreen,
+        FrenchPink,
+        SafetyOrange,
+        LavenderIndigo,
+        VividSkyBlue,
+        Apple,
+        RubineRed,
+        LightCarminePink,
+        OceanBlue,
+        FrenchSkyBlue,
+        SapGreen,
+        BigDipORuby,
+        Orange,
+        AmericanViolet,
+        Blue
+    )
 
 @Composable
 fun YCupPainterTheme(

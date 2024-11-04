@@ -1,4 +1,4 @@
-package com.velikanova.ycuppainter.ui.screen.projects.mvi
+package com.velikanova.ycuppainter.ui.screen.projectlist.mvi
 
 import com.velikanova.ycuppainter.architecture.MVIEffect
 
