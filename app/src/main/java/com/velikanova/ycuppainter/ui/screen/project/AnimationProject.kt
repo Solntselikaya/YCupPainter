@@ -1,5 +1,6 @@
 package com.velikanova.ycuppainter.ui.screen.project
 
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,6 +20,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -52,11 +54,8 @@ import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.E
 import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.INSTRUMENTS
 import com.velikanova.ycuppainter.ui.screen.project.additional.BottomBarButton.PEN
 import com.velikanova.ycuppainter.ui.screen.project.additional.ColorPopup
-import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseBrush
-import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseColor
-import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseEraser
-import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChooseInstruments
-import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.ChoosePen
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent
+import com.velikanova.ycuppainter.ui.screen.project.mvi.ProjectIntent.*
 import com.velikanova.ycuppainter.ui.screen.project.painter.DrawMode
 import com.velikanova.ycuppainter.ui.screen.project.painter.PainterMotionEvent
 import com.velikanova.ycuppainter.ui.screen.project.painter.PathProps
@@ -77,10 +76,10 @@ fun AnimationProject() {
     Scaffold(
         topBar = {
             TopBar(
-                undoAvailable = false,
-                redoAvailable = false,
-                onUndoClick = { /*TODO*/ },
-                onRedoClick = { /*TODO*/ },
+                undoAvailable = state.haveChangesToUndo,
+                redoAvailable = state.haveChangesToRedo,
+                onUndoClick = { viewModel.reduce(Undo) },
+                onRedoClick = { viewModel.reduce(Redo) },
                 onDeleteClick = { /*TODO*/ },
                 onAddFrameClick = { /*TODO*/ },
                 onLayersClick = { /*TODO*/ },
@@ -94,6 +93,9 @@ fun AnimationProject() {
                 drawColor = state.color,
                 drawStrokeWidth = state.strokeWidth,
                 drawMode = state.drawMode,
+                paths = state.paths,
+                onDrawLine = { viewModel.reduce(DrawLine(it)) },
+                onDrawEraserLine = { viewModel.reduce(DrawEraserLine(it)) },
             )
         },
         bottomBar = {
@@ -130,7 +132,10 @@ private fun TopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row {
-            IconButton(onClick = onUndoClick) {
+            IconButton(
+                onClick = onUndoClick,
+                enabled = undoAvailable
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_undo_arrow_24),
                     contentDescription = null,
@@ -138,7 +143,10 @@ private fun TopBar(
                 )
             }
 
-            IconButton(onClick = onRedoClick) {
+            IconButton(
+                onClick = onRedoClick,
+                enabled = redoAvailable
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_redo_arrow_24),
                     contentDescription = null,
@@ -195,17 +203,12 @@ private fun Content(
     paddingValues: PaddingValues,
     drawColor: Int,
     drawStrokeWidth: Float,
-    drawMode: DrawMode
+    drawMode: DrawMode,
+    paths: List<Pair<Path, PathProps>>,
+    onDrawLine: (Path) -> Unit,
+    onDrawEraserLine: (Path) -> Unit
 ) {
-    val pathProps = PathProps(
-        strokeWidth = drawStrokeWidth,
-        color = Color(drawColor),
-        eraseMode = drawMode == DrawMode.ERASE
-    )
-
-    val paths = remember { mutableStateListOf<Pair<Path, PathProps>>() }
     var currentPath by remember { mutableStateOf(Path()) }
-
     var motionEvent by remember { mutableStateOf(PainterMotionEvent.IDLE) }
     var currentPosition by remember { mutableStateOf(Offset.Unspecified) }
     var previousPosition by remember { mutableStateOf(Offset.Unspecified) }
@@ -262,9 +265,14 @@ private fun Content(
 
                 PainterMotionEvent.UP -> {
                     currentPath.lineTo(currentPosition.x, currentPosition.y)
-                    paths.add(Pair(currentPath, pathProps))
-                    currentPath = Path()
 
+                    if (drawMode == DrawMode.DRAW) {
+                        onDrawLine(currentPath)
+                    } else {
+                        onDrawEraserLine(currentPath)
+                    }
+
+                    currentPath = Path()
                     currentPosition = Offset.Unspecified
                     previousPosition = currentPosition
                     motionEvent = PainterMotionEvent.IDLE
@@ -281,17 +289,17 @@ private fun Content(
                     val property = it.second
 
                     if (!property.eraseMode) {
-                        drawPainterPath(path, property.color, 10f)
+                        drawPainterPath(path, Color(property.color), property.strokeWidth)
                     } else {
-                        drawEraserPath(path, 10f)
+                        drawEraserPath(path, property.strokeWidth)
                     }
                 }
 
                 if (motionEvent != PainterMotionEvent.IDLE) {
                     if (drawMode != DrawMode.ERASE) {
-                        drawPainterPath(currentPath, Color(drawColor), 10f)
+                        drawPainterPath(currentPath, Color(drawColor), drawStrokeWidth)
                     } else {
-                        drawEraserPath(currentPath, 10f)
+                        drawEraserPath(currentPath, drawStrokeWidth)
                     }
                 }
 
@@ -389,7 +397,10 @@ private fun BottomBar(
 
             ColorPopup(
                 expanded = colorsExpanded,
-                onDismissRequest = { colorsExpanded = false }
+                onDismissRequest = {
+                    colorsExpanded = false
+                    onPenClick()
+                }
             ) {
                 MaterialTheme.colorScheme.defaultColorPalette.forEach {
                     ColorButton(it) { onColorClick(it.toArgb()) }
