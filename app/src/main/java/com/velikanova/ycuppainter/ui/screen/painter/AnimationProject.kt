@@ -8,41 +8,60 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.drawscope.DrawStyle
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.velikanova.ycuppainter.R
-import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.*
+import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.BRUSH
+import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.COLOR
+import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.ERASER
+import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.INSTRUMENTS
+import com.velikanova.ycuppainter.ui.screen.painter.BottomBarButton.PEN
 import com.velikanova.ycuppainter.ui.theme.Green
 import com.velikanova.ycuppainter.ui.theme.PADDING_LARGE
 import com.velikanova.ycuppainter.ui.theme.PADDING_MEDIUM
-import com.velikanova.ycuppainter.ui.theme.PADDING_SMALL
 import com.velikanova.ycuppainter.ui.theme.YCupPainterTheme
+import com.velikanova.ycuppainter.utils.handleEvents
+
+private const val DELAY_AFTER_DOWN: Long = 27L
 
 @Composable
-fun Painter() {
+fun AnimationProject() {
     Scaffold(
         topBar = {
             TopBar(
+                undoAvailable = false,
+                redoAvailable = false,
                 onUndoClick = { /*TODO*/ },
                 onRedoClick = { /*TODO*/ },
                 onDeleteClick = { /*TODO*/ },
@@ -72,6 +91,8 @@ fun Painter() {
 
 @Composable
 private fun TopBar(
+    undoAvailable: Boolean,
+    redoAvailable: Boolean,
     onUndoClick: () -> Unit,
     onRedoClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -83,15 +104,16 @@ private fun TopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(PADDING_LARGE),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(PADDING_MEDIUM),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Row {
             IconButton(onClick = onUndoClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_undo_arrow_24),
                     contentDescription = null,
-                    tint = Color.Unspecified
+                    tint = if (undoAvailable) MaterialTheme.colorScheme.onBackground else Color.Unspecified
                 )
             }
 
@@ -99,12 +121,12 @@ private fun TopBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_redo_arrow_24),
                     contentDescription = null,
-                    tint = Color.Unspecified
+                    tint = if (redoAvailable) MaterialTheme.colorScheme.onBackground else Color.Unspecified
                 )
             }
         }
 
-        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+        Row {
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_bin_32),
@@ -151,7 +173,13 @@ private fun TopBar(
 private fun Content(
     paddingValues: PaddingValues
 ) {
-    val background = ImageBitmap.imageResource(R.drawable.canvas_background)
+    val paths = remember { mutableStateListOf<Pair<Path, PathProps>>() }
+    var currentPath by remember { mutableStateOf(Path()) }
+    var drawMode by remember { mutableStateOf(DrawMode.DRAW) }
+
+    var motionEvent by remember { mutableStateOf(PainterMotionEvent.IDLE) }
+    var currentPosition by remember { mutableStateOf(Offset.Unspecified) }
+    var previousPosition by remember { mutableStateOf(Offset.Unspecified) }
 
     Box(
         modifier = Modifier
@@ -167,9 +195,79 @@ private fun Content(
 
         Canvas(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .clipToBounds()
+                .handleEvents(
+                    onDown = { pointerInputChange: PointerInputChange ->
+                        currentPosition = pointerInputChange.position
+                        motionEvent = PainterMotionEvent.DOWN
+                        pointerInputChange.consume()
+                    },
+                    onMove = { pointerInputChange: PointerInputChange ->
+                        motionEvent = PainterMotionEvent.MOVE
+                        currentPosition = pointerInputChange.position
+                        pointerInputChange.consume()
+                    },
+                    onUp = { pointerInputChange: PointerInputChange ->
+                        motionEvent = PainterMotionEvent.UP
+                        pointerInputChange.consume()
+                    },
+                    delayAfterDownInMillis = DELAY_AFTER_DOWN
+                )
         ) {
+            when (motionEvent) {
+                PainterMotionEvent.DOWN -> {
+                    currentPath.moveTo(currentPosition.x, currentPosition.y)
+                    previousPosition = currentPosition
+                }
 
+                PainterMotionEvent.MOVE -> {
+                    currentPath.quadraticTo(
+                        previousPosition.x,
+                        previousPosition.y,
+                        (previousPosition.x + currentPosition.x) / 2,
+                        (previousPosition.y + currentPosition.y) / 2
+                    )
+                    previousPosition = currentPosition
+                }
+
+                PainterMotionEvent.UP -> {
+                    currentPath.lineTo(currentPosition.x, currentPosition.y)
+                    paths.add(Pair(currentPath, PathProps()))
+                    currentPath = Path()
+
+                    currentPosition = Offset.Unspecified
+                    previousPosition = currentPosition
+                    motionEvent = PainterMotionEvent.IDLE
+                }
+
+                PainterMotionEvent.IDLE -> Unit
+            }
+
+            with(drawContext.canvas.nativeCanvas) {
+                val checkPoint = saveLayer(null, null)
+
+                paths.forEach {
+                    val path = it.first
+                    val property = it.second
+
+                    if (!property.eraseMode) {
+                        drawPainterPath(path, Color.Black, 10f)
+                    } else {
+                        drawEraserPath(path, 10f)
+                    }
+                }
+
+                if (motionEvent != PainterMotionEvent.IDLE) {
+                    if (!false) {
+                        drawPainterPath(currentPath, Color.Black, 10f)
+                    } else {
+                        drawEraserPath(currentPath, 10f)
+                    }
+                }
+
+                restoreToCount(checkPoint)
+            }
         }
     }
 }
@@ -194,8 +292,7 @@ private fun BottomBar(
 
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = PADDING_SMALL),
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.Absolute.Center
     ) {
 
@@ -213,8 +310,6 @@ private fun BottomBar(
             }
         )
 
-        Spacer(modifier = Modifier.width(PADDING_LARGE))
-
         IconButton(
             onClick = {
                 onBrushClick()
@@ -228,8 +323,6 @@ private fun BottomBar(
                 )
             }
         )
-
-        Spacer(modifier = Modifier.width(PADDING_LARGE))
 
         IconButton(
             onClick = {
@@ -245,8 +338,6 @@ private fun BottomBar(
             }
         )
 
-        Spacer(modifier = Modifier.width(PADDING_LARGE))
-
         IconButton(
             onClick = {
                 onInstrumentsClick()
@@ -260,8 +351,6 @@ private fun BottomBar(
                 )
             }
         )
-
-        Spacer(modifier = Modifier.width(PADDING_LARGE))
 
         IconButton(
             onClick = {
@@ -282,10 +371,42 @@ private fun BottomBar(
     }
 }
 
+fun DrawScope.drawEraserPath(
+    path: Path,
+    width: Float
+) {
+    drawPath(
+        color = Color.Transparent,
+        path = path,
+        style = Stroke(
+            width = width,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        ),
+        blendMode = BlendMode.Clear
+    )
+}
+
+fun DrawScope.drawPainterPath(
+    path: Path,
+    color: Color,
+    width: Float
+) {
+    drawPath(
+        color = color,
+        path = path,
+        style = Stroke(
+            width = width,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    )
+}
+
 @PreviewLightDark
 @Composable
 private fun Preview() {
     YCupPainterTheme {
-        Painter()
+        AnimationProject()
     }
 }
