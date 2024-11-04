@@ -5,6 +5,9 @@ import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -21,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -133,24 +138,35 @@ private fun ColorPopupContent(
         }
     }
     Surface(
-        modifier = Modifier.graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-            this.alpha = alpha
-            transformOrigin = transformOriginState.value
-        },
+        modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+                transformOrigin = transformOriginState.value
+            },
         shape = RoundedCornerShape(4.dp),
-        color = Color.Black.copy(alpha = 0.14f),
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp
+        border = BorderStroke(1.dp, Color(0xFF555454).copy(0.16f)),
+        color = Color.Transparent,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp
     ) {
-        Row(
-            modifier = modifier
-                .padding(vertical = DropdownMenuVerticalPadding)
-                .width(IntrinsicSize.Max)
-                .verticalScroll(rememberScrollState()),
-            content = content
-        )
+        Box {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color.Black.copy(alpha = 0.14f))
+                    .blur(20.dp, BlurredEdgeTreatment.Unbounded)
+            )
+
+            Row(
+                modifier = modifier
+                    .padding(vertical = DropdownMenuVerticalPadding)
+                    .width(IntrinsicSize.Max)
+                    .verticalScroll(rememberScrollState()),
+                content = content
+            )
+        }
     }
 }
 
